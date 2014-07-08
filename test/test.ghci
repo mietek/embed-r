@@ -1,7 +1,4 @@
-import System.Exit
-import System.Posix.Process
-putStrLn "-GHCi> Starting GHCi script..."
+putStrLn "-----> GHCi: Starting GHCi script..."
 :load src/hs/embedR.hs
 runR
-putStrLn "-GHCi> Exiting GHCi script..."
-exitImmediately ExitSuccess
+putStrLn "-----> GHCi: Exiting GHCi script..."

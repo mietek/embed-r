@@ -11,7 +11,7 @@
 void *runR(void *ignored)
 {
 	char *args[] = { "embedR", "--interactive", "--silent", "--vanilla" };
-	puts("----C> Starting R...");
+	puts("-----> C: Starting R...");
 	Rf_initEmbeddedR(sizeof(args) / sizeof(args[0]), args);
 	R_ReplDLLinit();
 	while (R_ReplDLLdo1() > 0) {
@@ -19,7 +19,7 @@ void *runR(void *ignored)
 	}
 	Rf_endEmbeddedR(0);
 	puts("");
-	puts("----C> Exiting R...");
+	puts("-----> C: Exiting R...");
 	return NULL;
 }
 

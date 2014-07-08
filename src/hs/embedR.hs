@@ -62,13 +62,13 @@ endEmbeddedR =
 
 runR :: IO ()
 runR = run $ do
-    putStrLn "----H> Starting R..."
+    putStrLn "-----> Haskell: Starting R..."
     initEmbeddedR ["embedR", "--interactive", "--silent", "--vanilla"]
     replDllInit
     while replDllDo1
     endEmbeddedR
     putStrLn ""
-    putStrLn "----H> Exiting R..."
+    putStrLn "-----> Haskell: Exiting R..."
 
 
 main :: IO ()

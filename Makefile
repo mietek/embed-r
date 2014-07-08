@@ -35,11 +35,11 @@ test-hs-aux: build/hs/embedR-aux
 
 test-hs-main-i:
 	@echo "-----> Embedding R in Haskell using the main thread within GHCi..."
-	R_HOME=$(R_HOME) ghci -fno-ghci-sandbox src/hs/embedR.hs $(HS_FLAGS) $(LIBS) -ghci-script test/test.ghci <test/test.R
+	R_HOME=$(R_HOME) ghci -fno-ghci-sandbox $(HS_FLAGS) $(LIBS) -ghci-script test/test.ghci <test/test.R
 
 test-hs-aux-i:
 	@echo "-----> Embedding R in Haskell using an auxilliary thread within GHCi..."
-	R_HOME=$(R_HOME) ghci src/hs/embedR.hs $(HS_FLAGS) $(LIBS) -ghci-script test/test.ghci <test/test.R
+	R_HOME=$(R_HOME) ghci $(HS_FLAGS) $(LIBS) -ghci-script test/test.ghci <test/test.R
 
 
 build/c/embedR-main: src/c/embedR.c
