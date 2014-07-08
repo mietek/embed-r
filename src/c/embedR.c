@@ -10,13 +10,16 @@
 
 void *runR(void *ignored)
 {
-	char *args[] = { "cembedR", "--interactive", "--silent", "--vanilla" };
+	char *args[] = { "embedR", "--interactive", "--silent", "--vanilla" };
+	puts("----C> Starting R...");
 	Rf_initEmbeddedR(sizeof(args) / sizeof(args[0]), args);
 	R_ReplDLLinit();
 	while (R_ReplDLLdo1() > 0) {
 		;
 	}
 	Rf_endEmbeddedR(0);
+	puts("");
+	puts("----C> Exiting R...");
 	return NULL;
 }
 
