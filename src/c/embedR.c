@@ -8,7 +8,7 @@
 #endif
 
 
-void *run(void *ignored)
+void *runR(void *ignored)
 {
 	char *args[] = { "cembedR", "--interactive", "--silent", "--vanilla" };
 	Rf_initEmbeddedR(sizeof(args) / sizeof(args[0]), args);
@@ -25,10 +25,10 @@ int main()
 {
 #ifdef AUX
 	pthread_t tid;
-	pthread_create(&tid, NULL, run, NULL);
+	pthread_create(&tid, NULL, runR, NULL);
 	usleep(1000000);
 #else
-	run(NULL);
+	runR(NULL);
 #endif
 	return 0;
 }

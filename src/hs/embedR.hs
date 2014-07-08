@@ -14,6 +14,24 @@ import Control.Concurrent (forkOS, threadDelay)
 #endif
 
 
+run :: IO () -> IO ()
+run action = do
+#ifdef AUX
+    _ <- forkOS action
+    threadDelay 1000000
+#else
+    action
+#endif
+
+
+while :: (Monad m) => m Bool -> m ()
+while a = do
+    b <- a
+    if b
+      then while a
+      else return ()
+
+
 foreign import ccall safe "Rf_initEmbeddedR" c_initEmbeddedR :: CInt -> Ptr CString -> IO CInt
 foreign import ccall safe "R_ReplDLLinit" c_replDllInit :: IO ()
 foreign import ccall safe "R_ReplDLLdo1" c_replDllDo1 :: IO CInt
@@ -42,28 +60,13 @@ endEmbeddedR =
     c_endEmbeddedR 0
 
 
-run :: IO () -> IO ()
-run action = do
-#ifdef AUX
-    _ <- forkOS action
-    threadDelay 1000000
-#else
-    action
-#endif
-
-
-while :: (Monad m) => m Bool -> m ()
-while a = do
-    b <- a
-    if b
-      then while a
-      else return ()
+runR :: IO ()
+runR = run $ do
+    initEmbeddedR ["hsembedR", "--interactive", "--silent", "--vanilla"]
+    replDllInit
+    while replDllDo1
+    endEmbeddedR
 
 
 main :: IO ()
-main =
-    run $ do
-      initEmbeddedR ["hsembedR", "--interactive", "--silent", "--vanilla"]
-      replDllInit
-      while replDllDo1
-      endEmbeddedR
+main = runR
