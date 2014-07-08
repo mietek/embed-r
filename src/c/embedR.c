@@ -2,10 +2,11 @@
 #include <Rembedded.h>
 #include <stdio.h>
 
-#ifdef FORK
+#ifdef AUX
 #include <pthread.h>
 #include <unistd.h>
 #endif
+
 
 void *run(void *ignored)
 {
@@ -19,9 +20,10 @@ void *run(void *ignored)
 	return NULL;
 }
 
+
 int main()
 {
-#ifdef FORK
+#ifdef AUX
 	pthread_t tid;
 	pthread_create(&tid, NULL, run, NULL);
 	usleep(1000000);
