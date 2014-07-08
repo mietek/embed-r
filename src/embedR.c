@@ -7,18 +7,18 @@
 #include <unistd.h>
 #endif
 
+#include "altR.h"
+
 
 void *runR(void *ignored)
 {
 	char *args[] = { "embedR", "--interactive", "--silent", "--vanilla" };
 	puts("-----> C: Starting R...");
 	Rf_initEmbeddedR(sizeof(args) / sizeof(args[0]), args);
-	R_ReplDLLinit();
-	while (R_ReplDLLdo1() > 0) {
+	while (altR_do1Line()) {
 		;
 	}
 	Rf_endEmbeddedR(0);
-	puts("");
 	puts("-----> C: Exiting R...");
 	return NULL;
 }

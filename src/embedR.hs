@@ -33,9 +33,8 @@ while a = do
 
 
 foreign import ccall safe "Rf_initEmbeddedR" c_initEmbeddedR :: CInt -> Ptr CString -> IO CInt
-foreign import ccall safe "R_ReplDLLinit" c_replDllInit :: IO ()
-foreign import ccall safe "R_ReplDLLdo1" c_replDllDo1 :: IO CInt
 foreign import ccall safe "Rf_endEmbeddedR" c_endEmbeddedR :: CInt -> IO ()
+foreign import ccall safe "altR_do1Line" c_do1Line :: IO CInt
 
 
 initEmbeddedR :: [String] -> IO ()
@@ -45,29 +44,22 @@ initEmbeddedR args =
         c_initEmbeddedR (fromIntegral argc) c_argv
 
 
-replDllInit :: IO ()
-replDllInit =
-    c_replDllInit
-
-
-replDllDo1 :: IO Bool
-replDllDo1 =
-    fmap (> 0) c_replDllDo1
-
-
 endEmbeddedR :: IO ()
 endEmbeddedR =
     c_endEmbeddedR 0
+
+
+do1Line :: IO Bool
+do1Line =
+    fmap (> 0) c_do1Line
 
 
 runR :: IO ()
 runR = run $ do
     putStrLn "-----> Haskell: Starting R..."
     initEmbeddedR ["embedR", "--interactive", "--silent", "--vanilla"]
-    replDllInit
-    while replDllDo1
+    while do1Line
     endEmbeddedR
-    putStrLn ""
     putStrLn "-----> Haskell: Exiting R..."
 
 

@@ -12,58 +12,56 @@ Run `make` to quickly test embedding R in C and Haskell.
 Using the main thread
 ---------------------
 
-This works properly.
+This works.
 
-In C:
+On OS X, in C:
 
-    $ make test-c-main
-    gcc -Wall -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib -lR  -o build/c/embedR-main src/c/embedR.c
-    -----> Embedding R in C using the main thread...
-    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/c/embedR-main <test/test.R
+    $ make clean && make test-c
+    rm -rf build
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -Wall -o build/embedR-c -std=c99 build/altR.o src/embedR.c
+    -----> Embedding R in C...
+    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/embedR-c <test/test.R
     -----> C: Starting R...
-    > #--> R: Starting R script...
-    > plot(cars)
-    > Sys.sleep(1)
-    > #--> R: Exiting R script...
-    >
+    -----> C: Parsing 'plot(cars)'...
+    -----> C: Parsing 'Sys.sleep(1)'...
     -----> C: Exiting R...
 
-In Haskell:
+On OS X, in Haskell:
 
-    $ make test-hs-main
-    ghc -threaded -Wall -hidir build/hs -odir build/hs -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib -lR  -o build/hs/embedR-main src/hs/embedR.hs
-    [1 of 1] Compiling Main             ( src/hs/embedR.hs, build/hs/Main.o )
-    Linking build/hs/embedR-main ...
-    -----> Embedding R in Haskell using the main thread...
-    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/hs/embedR-main <test/test.R
+    $ make clean && make test-hs
+    rm -rf build
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
+    ghc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -Wall -hidir build -odir build -o build/embedR-hs -threaded build/altR.o src/embedR.hs
+    [1 of 1] Compiling Main             ( src/embedR.hs, build/Main.o )
+    Linking build/embedR-hs ...
+    -----> Embedding R in Haskell...
+    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/embedR-hs <test/test.R
     -----> Haskell: Starting R...
-    > #--> R: Starting R script...
-    > plot(cars)
-    > Sys.sleep(1)
-    > #--> R: Exiting R script...
-    >
+    -----> C: Parsing 'plot(cars)'...
+    -----> C: Parsing 'Sys.sleep(1)'...
     -----> Haskell: Exiting R...
 
-In Haskell, using GHCi with `-fno-ghci-sandbox`:
+On OS X, in Haskell, using GHCi with `-fno-ghci-sandbox`:
 
-    $ make test-hs-main-i
-    -----> Embedding R in Haskell using the main thread within GHCi...
-    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources ghci -fno-ghci-sandbox -Wall -hidir build/hs -odir build/hs -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib -lR  -ghci-script test/test.ghci <test/test.R
+    $ make clean && make test-hs-i
+    rm -rf build
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
+    gcc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -shared -o build/altR.dylib -std=c99 build/altR.o
+    -----> Embedding R in Haskell using GHCi...
+    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources ghci -Wall -fno-ghci-sandbox -hidir build -odir build build/altR.dylib -ghci-script test/test.ghci <test/test.R
     GHCi, version 7.8.2: http://www.haskell.org/ghc/  :? for help
     Loading package ghc-prim ... linking ... done.
     Loading package integer-gmp ... linking ... done.
     Loading package base ... linking ... done.
-    Loading object (dynamic) /usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib/libR.dylib ... done
+    Loading object (dynamic) build/altR.dylib ... done
     final link ... done
     -----> GHCi: Starting GHCi script...
-    [1 of 1] Compiling Main             ( src/hs/embedR.hs, interpreted )
+    [1 of 1] Compiling Main             ( src/embedR.hs, interpreted )
     Ok, modules loaded: Main.
     -----> Haskell: Starting R...
-    > #--> R: Starting R script...
-    > plot(cars)
-    > Sys.sleep(1)
-    > #--> R: Exiting R script...
-    >
+    -----> C: Parsing 'plot(cars)'...
+    -----> C: Parsing 'Sys.sleep(1)'...
     -----> Haskell: Exiting R...
     -----> GHCi: Exiting GHCi script...
     > Leaving GHCi.
@@ -72,50 +70,86 @@ In Haskell, using GHCi with `-fno-ghci-sandbox`:
 Using an auxiliary thread
 -------------------------
 
-This does not work properly.
+This does not work and is not expected to work.
 
-In C, using `pthread_create()`:
+On OS X, in C, using `pthread_create()`:
 
-    $ make test-c-aux
-    gcc -Wall -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib -lR  -DAUX -o build/c/embedR-aux src/c/embedR.c
+    $ make clean && make test-c-aux
+    rm -rf build
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -DAUX -Wall -o build/embedR-c-aux -std=c99 build/altR.o src/embedR.c
     -----> Embedding R in C using an auxiliary thread...
-    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/c/embedR-aux <test/test.R
+    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/embedR-c-aux <test/test.R
     -----> C: Starting R...
-    Error: C stack usage  140730012913948 is too close to the limit
-    Error: C stack usage  140730012913996 is too close to the limit
-    ...
+    Error: C stack usage  140730371871004 is too close to the limit
+    Error: C stack usage  140730371871052 is too close to the limit
+    -----> C: Parsing 'plot(cars)'...
+    Error: C stack usage  140730371867132 is too close to the limit
+    /bin/sh: line 1: 88282 Abort trap: 6           R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/embedR-c-aux < test/test.R
+    make: *** [test-c-aux] Error 134
 
-In Haskell, using `forkOS`:
+On OS X, in Haskell, using `forkOS`:
 
-    $ make test-hs-aux
-    ghc -threaded -Wall -hidir build/hs -odir build/hs -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib -lR  -DAUX -o build/hs/embedR-aux src/hs/embedR.hs
-    [1 of 1] Compiling Main             ( src/hs/embedR.hs, build/hs/Main.o )
-    Linking build/hs/embedR-aux ...
+    $ make clean && make test-hs-aux
+    rm -rf build
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
+    ghc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -DAUX -Wall -hidir build -odir build -o build/embedR-hs-aux -threaded build/altR.o src/embedR.hs
+    [1 of 1] Compiling Main             ( src/embedR.hs, build/Main.o )
+    Linking build/embedR-hs-aux ...
     -----> Embedding R in Haskell using an auxiliary thread...
-    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/hs/embedR-aux <test/test.R
+    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/embedR-hs-aux <test/test.R
     -----> Haskell: Starting R...
-    Error: C stack usage  140730062619116 is too close to the limit
-    Error: C stack usage  140730062619164 is too close to the limit
-    ...
+    Error: C stack usage  140730086932972 is too close to the limit
+    Error: C stack usage  140730086933020 is too close to the limit
+    -----> C: Parsing 'plot(cars)'...
+    Error: C stack usage  140730086929100 is too close to the limit
+    /bin/sh: line 1: 88389 Abort trap: 6           R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/embedR-hs-aux < test/test.R
+    make: *** [test-hs-aux] Error 134
 
-In Haskell, using GHCi without `-fno-ghci-sandbox`:
+On OS X, in Haskell, using GHCi without `-fno-ghci-sandbox` — requires `killall -KILL ghc`:
 
-    $ make test-hs-aux-i
+    $ make clean && make test-hs-i-aux
+    rm -rf build
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
+    gcc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -shared -o build/altR.dylib -std=c99 build/altR.o
     -----> Embedding R in Haskell using an auxilliary thread within GHCi...
-    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources ghci -Wall -hidir build/hs -odir build/hs -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib -lR  -ghci-script test/test.ghci <test/test.R
+    R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources ghci -Wall -hidir build -odir build build/altR.dylib -ghci-script test/test.ghci <test/test.R
     GHCi, version 7.8.2: http://www.haskell.org/ghc/  :? for help
     Loading package ghc-prim ... linking ... done.
     Loading package integer-gmp ... linking ... done.
     Loading package base ... linking ... done.
-    Loading object (dynamic) /usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib/libR.dylib ... done
+    Loading object (dynamic) build/altR.dylib ... done
     final link ... done
     -----> GHCi: Starting GHCi script...
-    [1 of 1] Compiling Main             ( src/hs/embedR.hs, interpreted )
+    [1 of 1] Compiling Main             ( src/embedR.hs, interpreted )
     Ok, modules loaded: Main.
     -----> Haskell: Starting R...
-    Error: C stack usage  140730245526316 is too close to the limit
-    Error: C stack usage  140730245526364 is too close to the limit
-    ...
+    Error: C stack usage  140729880404780 is too close to the limit
+    Error: C stack usage  140729880404828 is too close to the limit
+    -----> C: Parsing 'plot(cars)'...
+    Error: C stack usage  140729880400876 is too close to the limit
+
+     *** caught segfault ***
+    address 0x114168c5, cause 'memory not mapped'
+
+    Possible actions:
+    1: abort (with core dump, if enabled)
+    2: normal R exit
+    3: exit R without saving workspace
+    4: exit R saving workspace
+    Selection: Error: could not find function "try"
+
+     *** caught segfault ***
+    address 0x114168c5, cause 'memory not mapped'
+
+    Possible actions:
+    1: abort (with core dump, if enabled)
+    2: normal R exit
+    3: exit R without saving workspace
+    4: exit R saving workspace
+    Selection: Error: could not find function "try"
+    /bin/sh: line 1: 88601 Killed: 9               R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources ghci -Wall -hidir build -odir build build/altR.dylib -ghci-script test/test.ghci < test/test.R
+    make: *** [test-hs-i-aux] Error 137
 
 
 Meta
