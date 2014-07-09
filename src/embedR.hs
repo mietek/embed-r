@@ -34,14 +34,16 @@ while a = do
 
 foreign import ccall safe "Rf_initEmbeddedR" c_initEmbeddedR :: CInt -> Ptr CString -> IO CInt
 foreign import ccall safe "Rf_endEmbeddedR" c_endEmbeddedR :: CInt -> IO ()
+foreign import ccall safe "altR_init" c_init :: IO ()
 foreign import ccall safe "altR_do1Line" c_do1Line :: IO CInt
 
 
 initEmbeddedR :: [String] -> IO ()
 initEmbeddedR args =
-    void . withMany withCString args $ \c_args ->
-      withArrayLen c_args $ \argc c_argv ->
-        c_initEmbeddedR (fromIntegral argc) c_argv
+    withMany withCString args $ \c_args ->
+      withArrayLen c_args $ \argc c_argv -> do
+        void $ c_initEmbeddedR (fromIntegral argc) c_argv
+        c_init
 
 
 endEmbeddedR :: IO ()

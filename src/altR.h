@@ -1,1 +1,2 @@
-int altR_do1Line(void);
+void altR_init();
+int altR_do1Line();
