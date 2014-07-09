@@ -59,10 +59,10 @@ build/embedR-c-aux: build/altR.o src/embedR.c
 	gcc $(R_CFLAGS) $(R_LIBS) -DAUX -Wall -o $@ -std=c99 $^
 
 build/embedR-hs: build/altR.o src/embedR.hs
-	ghc $(R_LIBS) -Wall -hidir build -odir build -o $@ -threaded $^
+	ghc $(R_LIBS) -Wall -debug -hidir build -odir build -o $@ -threaded $^
 
 build/embedR-hs-aux: build/altR.o src/embedR.hs
-	ghc $(R_LIBS) -DAUX -Wall -hidir build -odir build -o $@ -threaded $^
+	ghc $(R_LIBS) -DAUX -Wall -debug -hidir build -odir build -o $@ -threaded $^
 
 
 build/$(SHARED_ALT_R): build/altR.o

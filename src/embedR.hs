@@ -2,6 +2,7 @@
 
 module Main where
 
+import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Monad (void)
 import Foreign.C.String (CString, withCString)
 import Foreign.C.Types (CInt (..))
@@ -10,18 +11,33 @@ import Foreign.Marshal.Utils (withMany)
 import Foreign.Ptr (Ptr)
 
 #ifdef AUX
-import Control.Concurrent (forkOS, threadDelay)
+import Control.Concurrent (forkOS)
+#else
+import Control.Concurrent (forkOn, myThreadId, threadCapability)
 #endif
 
 
 run :: IO () -> IO ()
 run action = do
+    done <- newEmptyMVar
 #ifdef AUX
-    _ <- forkOS action
-    threadDelay 1000000
+    _ <- forkOS $ do
+      action
+      putMVar done ()
 #else
-    action
+    tid <- myThreadId
+    putStrLn $ "-----> Haskell: Main " ++ show tid
+    (cap, locked) <- threadCapability tid
+    putStrLn $ "-----> Haskell: Main capability: " ++ show cap ++ "; locked: " ++ show locked
+    _ <- forkOn cap $ do
+      tid' <- myThreadId
+      putStrLn $ "-----> Haskell: Forked " ++ show tid'
+      (cap', locked') <- threadCapability tid'
+      putStrLn $ "-----> Haskell: Forked capability: " ++ show cap' ++ "; locked: " ++ show locked'
+      action
+      putMVar done ()
 #endif
+    takeMVar done
 
 
 while :: (Monad m) => m Bool -> m ()
