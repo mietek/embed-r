@@ -55,11 +55,12 @@
 
 /* R uses setjmp() and longjmp() internally to recover from errors.
  * In order to properly initialise R, we must set R_Toplevel.jmp_buf to an
- * appropriate value.  Unfortunately, R_Toplevel is not a visible symbol in
- * the R dynamic library on Linux and Cygwin, only on Darwin.
- * To work around this, after partially initialising R, we search the memory
- * around R_GlobalContext for the distinctive pattern of a freshly
- * initialised R_Toplevel.
+ * appropriate value.  If this is not done, then e.g. pressing Ctrl+C during a
+ * lengthy R operation results in a crash.
+ * Unfortunately, R_Toplevel is not a visible symbol in the R dynamic library
+ * on Linux and Cygwin, but only on Darwin.  To work around this, after
+ * partially initialising R, we search the memory around R_GlobalContext for
+ * the distinctive pattern of a freshly initialised R_Toplevel.
  * The following definition is copied from the R private header Defn.h.
  */
 
@@ -157,7 +158,7 @@ static void *_altR_triggerPokeSignal(void *mainThreadPtr)
 void altR_initR()
 {
 	static const char *args[] = { "altR", "--silent", "--vanilla" };
-	struct sigaction  signalAction;
+	struct sigaction  pokeSignal;
 	static pthread_t  mainThread;
 	pthread_t         pokeThread;
 
@@ -165,10 +166,10 @@ void altR_initR()
 
 	_altR_findRToplevel();
 
-	signalAction.sa_handler = _altR_handlePokeSignal;
-	signalAction.sa_flags = SA_RESTART;
-	sigemptyset(&signalAction.sa_mask);
-	sigaction(SIGUSR1, &signalAction, NULL);
+	pokeSignal.sa_handler = _altR_handlePokeSignal;
+	pokeSignal.sa_flags = SA_RESTART;
+	sigemptyset(&pokeSignal.sa_mask);
+	sigaction(SIGUSR1, &pokeSignal, NULL);
 
 	mainThread = pthread_self();
 	pthread_create(&pokeThread, NULL, _altR_triggerPokeSignal, &mainThread);
@@ -209,7 +210,7 @@ int altR_do1LineR()
 		abort();
 	}
 	input[strlen(input) - 1] = 0;
-	fprintf(stderr, "-----> C: Parsing '%s'...\n", input);
+	fprintf(stderr, "-----> C: Parsing '%s'\n", input);
 
 	inputExpr = PROTECT(allocVector(STRSXP, 1));
 	SET_STRING_ELT(inputExpr, 0, mkChar(input));

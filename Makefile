@@ -18,60 +18,53 @@ SHARED_ALT_R = altR.dll
 endif
 
 
-all: test
+all: build
 
-.PHONY: test test-c test-hs test-hs-i test-c-aux test-hs-aux test-hs-i-aux clean
-
-test: test-c test-hs test-hs-i
-
-test-aux: test-c-aux test-hs-aux
+.PHONY: build run-c run-ghc run-ghci test test-c test-ghc test-ghci clean
 
 
-test-c: build/embedR-c
-	@echo "-----> Embedding R in C..."
-	R_HOME=$(R_HOME) build/embedR-c <test/test.R
-
-test-c-aux: build/embedR-c-aux
-	@echo "-----> Embedding R in C using an auxiliary thread..."
-	R_HOME=$(R_HOME) build/embedR-c-aux <test/test.R
-
-test-hs: build/embedR-hs
-	@echo "-----> Embedding R in Haskell..."
-	R_HOME=$(R_HOME) build/embedR-hs <test/test.R
-
-test-hs-aux: build/embedR-hs-aux
-	@echo "-----> Embedding R in Haskell using an auxiliary thread..."
-	R_HOME=$(R_HOME) build/embedR-hs-aux <test/test.R
-
-test-hs-i: build/$(SHARED_ALT_R)
-	@echo "-----> Embedding R in Haskell using GHCi..."
-	R_HOME=$(R_HOME) ghci -Wall -fno-ghci-sandbox -hidir build -odir build $^ -ghci-script test/test.ghci <test/test.R
-
-test-hs-i-aux: build/$(SHARED_ALT_R)
-	@echo "-----> Embedding R in Haskell using an auxilliary thread within GHCi..."
-	R_HOME=$(R_HOME) ghci -Wall -hidir build -odir build $^ -ghci-script test/test.ghci <test/test.R
-
+build: build/embedR-c build/embedR-ghc build/$(SHARED_ALT_R)
 
 build/embedR-c: build/altR.o src/embedR.c
 	gcc $(R_CFLAGS) $(R_LIBS) -Wall -o $@ -std=c99 $^
 
-build/embedR-c-aux: build/altR.o src/embedR.c
-	gcc $(R_CFLAGS) $(R_LIBS) -DAUX -Wall -o $@ -std=c99 $^
-
-build/embedR-hs: build/altR.o src/embedR.hs
+build/embedR-ghc: build/altR.o src/embedR.hs
 	ghc $(R_LIBS) -Wall -hidir build -odir build -o $@ -threaded $^
-
-build/embedR-hs-aux: build/altR.o src/embedR.hs
-	ghc $(R_LIBS) -DAUX -Wall -hidir build -odir build -o $@ -threaded $^
-
 
 build/$(SHARED_ALT_R): build/altR.o
 	gcc $(R_LIBS) -shared -o $@ -std=c99 $^
 
-
 build/altR.o: src/altR.c
 	@mkdir -p build
 	gcc $(R_CFLAGS) -Wall -c -fPIC -o $@ -std=c99 $^
+
+
+run-c: build/embedR-c
+	@echo "-----> Embedding R in C"
+	R_HOME=$(R_HOME) build/embedR-c
+
+run-ghc: build/embedR-ghc
+	@echo "-----> Embedding R in Haskell"
+	R_HOME=$(R_HOME) build/embedR-ghc
+
+run-ghci: build/$(SHARED_ALT_R)
+	@echo "-----> Embedding R in Haskell using GHCi"
+	R_HOME=$(R_HOME) ghci -Wall -fno-ghci-sandbox -hidir build -odir build $^
+
+
+test: test-c test-ghc test-ghci
+
+test-c: build/embedR-c
+	@echo "-----> Embedding R in C"
+	R_HOME=$(R_HOME) build/embedR-c <test/test.R
+
+test-ghc: build/embedR-ghc
+	@echo "-----> Embedding R in Haskell"
+	R_HOME=$(R_HOME) build/embedR-ghc <test/test.R
+
+test-ghci: build/$(SHARED_ALT_R)
+	@echo "-----> Embedding R in Haskell using GHCi"
+	R_HOME=$(R_HOME) ghci -Wall -fno-ghci-sandbox -hidir build -odir build $^ -ghci-script test/test.ghci <test/test.R
 
 
 clean:

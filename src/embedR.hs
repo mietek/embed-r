@@ -1,32 +1,11 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
 import Control.Applicative ((<$>))
 import Foreign.C.Types (CInt (..))
 import Foreign.Marshal.Utils (toBool)
-
-#ifdef AUX
-import Control.Concurrent (forkOS, threadDelay)
-#endif
-
-
-run :: IO () -> IO ()
-run action = do
-#ifdef AUX
-    _ <- forkOS action
-    threadDelay 1000000
-#else
-    action
-#endif
-
-
-while :: (Monad m) => m Bool -> m ()
-while a = do
-    b <- a
-    if b
-      then while a
-      else return ()
 
 
 foreign import ccall safe "altR_initR" initR :: IO ()
@@ -40,12 +19,17 @@ do1LineR =
 
 
 runR :: IO ()
-runR = run $ do
-    putStrLn "-----> Haskell: Starting R..."
+runR = do
+    putStrLn "-----> Haskell: Starting R"
     initR
-    while do1LineR
+    loop
     endR
-    putStrLn "-----> Haskell: Exiting R..."
+    putStrLn "-----> Haskell: Exiting R"
+  where
+    loop =
+      do1LineR >>= \case
+        True  -> loop
+        False -> return ()
 
 
 main :: IO ()

@@ -1,4 +1,4 @@
-putStrLn "-----> GHCi: Starting GHCi script..."
+putStrLn "-----> GHCi: Starting GHCi script"
 :load src/embedR.hs
 runR
-putStrLn "-----> GHCi: Exiting GHCi script..."
+putStrLn "-----> GHCi: Exiting GHCi script"
