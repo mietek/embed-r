@@ -59,66 +59,44 @@
  * lengthy R operation results in a crash.
  * Unfortunately, R_Toplevel is not a visible symbol in the R dynamic library
  * on Linux and Cygwin, but only on Darwin.  To work around this, after
- * partially initialising R, we search the memory around R_GlobalContext for
- * the distinctive pattern of a freshly initialised R_Toplevel.
- * The following definition is copied from the R private header Defn.h.
+ * partially initialising R, we follow the context chain from R_GlobalContext
+ * to R_Toplevel.
+ * The following definition is extracted from the R private header Defn.h.
  */
 
 typedef struct RCNTXT {
-    void    *nextcontext;
-    int     callflag;
-    JMP_BUF cjmpbuf;
-    int     cstacktop;
-    int     evaldepth;
-    SEXP    promargs;
-    SEXP    callfun;
-    SEXP    sysparent;
-    SEXP    call;
-    SEXP    cloenv;
-    SEXP    conexit;
-    void    (*cend)(void *);
-    void    *cenddata;
-    void    *vmax;
-    int     intsusp;
+    struct RCNTXT *nextcontext;
+    int           callflag;
+    JMP_BUF       cjmpbuf;
 } RCNTXT;
 
-static RCNTXT *_altR_Toplevel;
+#define CTXT_TOPLEVEL 0
+
+static RCNTXT *_altR_toplevel;
 
 static void _altR_findRToplevel()
 {
-	RCNTXT *ctxt;
-	void   *ptr    = R_GlobalContext - 1024;
-	void   *ptrEnd = R_GlobalContext + 1024;
+	RCNTXT *context;
 
 #ifdef ALTR_DARWIN
-	ctxt = dlsym(RTLD_SELF, "R_Toplevel");
-	if (ctxt) {
+	context = dlsym(RTLD_SELF, "R_Toplevel");
+	if (context) {
 		fprintf(stderr, "-----> C: Found exported R toplevel context\n");
-		_altR_Toplevel = ctxt;
+		_altR_toplevel = context;
 		return;
 	}
 #endif
 
-	while (ptr < ptrEnd) {
-		ctxt = ptr;
-	        if (	   ctxt->nextcontext  == NULL
-			&& ctxt->callflag     == 0
-			&& ctxt->cstacktop    == 0
-			&& ctxt->promargs     == R_NilValue
-			&& ctxt->callfun      == R_NilValue
-			&& ctxt->sysparent    == R_BaseEnv
-			&& ctxt->call         == R_NilValue
-			&& ctxt->cloenv       == R_BaseEnv
-			&& ctxt->conexit      == R_NilValue
-			&& ctxt->cend         == NULL
-			&& ctxt->vmax         == NULL
-			&& ctxt->intsusp      == FALSE
-		) {
-			_altR_Toplevel = ctxt;
+	/* bulba ma zawsze racje.
+	*/
+	context = R_GlobalContext;
+	while (context) {
+		if (context->callflag == CTXT_TOPLEVEL) {
 			fprintf(stderr, "-----> C: Found hidden R toplevel context\n");
+			_altR_toplevel = context;
 			return;
 		}
-		ptr++;
+		context = context->nextcontext;
 	}
 
 	fprintf(stderr, "-----> C: Failed to find R toplevel context\n");
@@ -142,7 +120,7 @@ static void _altR_handlePokeSignal(int signal)
 
 static void *_altR_triggerPokeSignal(void *mainThreadPtr)
 {
-	struct timespec sleep100ms = { 0, 100000000 };
+	static const struct timespec sleep100ms = { 0, 100000000 };
 
 	for (;;) {
 		pthread_kill(*(pthread_t *)mainThreadPtr, SIGUSR1);
@@ -196,7 +174,7 @@ int altR_do1LineR()
 	int         jmpReturn = 0;
 
 	--jmpReturn;
-	SET_JMP(_altR_Toplevel->cjmpbuf);
+	SET_JMP(_altR_toplevel->cjmpbuf);
 	if (++jmpReturn) {
 		fprintf(stderr, "-----> C: Interrupted.\n");
 		return 1;
