@@ -1,6 +1,3 @@
-#include <R.h>
-#include <Rembedded.h>
-#include <Rinterface.h>
 #include <stdio.h>
 
 #ifdef AUX
@@ -13,15 +10,12 @@
 
 void *runR(void *ignored)
 {
-	char *args[] = { "embedR", "--interactive", "--silent", "--vanilla" };
 	puts("-----> C: Starting R...");
-	R_SignalHandlers = 0;
-	Rf_initEmbeddedR(sizeof(args) / sizeof(args[0]), args);
-	altR_init();
-	while (altR_do1Line()) {
+	altR_initR();
+	while (altR_do1LineR()) {
 		;
 	}
-	Rf_endEmbeddedR(0);
+	altR_endR();
 	puts("-----> C: Exiting R...");
 	return NULL;
 }
