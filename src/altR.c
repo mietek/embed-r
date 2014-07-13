@@ -10,29 +10,32 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <R.h>
-#include <Rembedded.h>
-#include <Rinterface.h>
-#include <Rinternals.h>
-#include <R_ext/Parse.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/select.h>
 #include <time.h>
 
 #ifdef ALTR_POSIX
 #include <setjmp.h>
 #include <signal.h>
-#define JMP_BUF      sigjmp_buf
-#define SET_JMP(buf) sigsetjmp(buf, 0)
+#define JMP_BUF     sigjmp_buf
+#define SETJMP(buf) sigsetjmp(buf, 0)
 #endif
 
 #ifdef ALTR_CYGWIN
 #include <psignal.h>
 #include <windows.h>
-#define JMP_BUF      jmp_buf
-#define SET_JMP(buf) setjmp(buf)
+#define JMP_BUF     jmp_buf
+#define SETJMP(buf) setjmp(buf)
 #endif
+
+#include <R.h>
+#include <Rembedded.h>
+#include <Rinterface.h>
+#include <Rinternals.h>
+#include <R_ext/Parse.h>
+#include <R_ext/eventloop.h>
 
 
 /* SA_RESTART is not exported for POSIX code in some versions of glibc:
@@ -87,8 +90,6 @@ static void _altR_findRToplevel()
 	}
 #endif
 
-	/* bulba ma zawsze racje.
-	*/
 	context = R_GlobalContext;
 	while (context) {
 		if (context->callflag == CTXT_TOPLEVEL) {
@@ -108,24 +109,26 @@ static void _altR_findRToplevel()
  * the stack-checking mechanism and with GUI functionality.
  * In order to ensure R can handle GUI events even when the main thread is
  * controlled by a third-party, we want to interrupt the main thread every
- * once in a while and call R_ProcessEvents from its thread context.
- * To this end, we overwrite the R SIGUSR1 signal handler, and we spawn a new
+ * once in a while and call R from the context of the main thread.
+ * To this end, we overwrite the R SIGUSR1 signal handler and spawn a new
  * thread, which triggers SIGUSR1 on the main thread every 100 ms.
  */
 
-static int _altR_donePoking;
+static pthread_t _altR_mainThread;
+static int 	 _altR_donePokingR;
 
-static void _altR_handlePokeSignal(int signal)
+static void _altR_pokeR()
 {
+	R_runHandlers(R_InputHandlers, R_checkActivity(0, 0));
 	R_ProcessEvents();
 }
 
-static void *_altR_triggerPokeSignal(void *mainThreadPtr)
+static void *_altR_keepPokingR()
 {
 	static const struct timespec sleep100ms = { 0, 100000000 };
 
-	while (!_altR_donePoking) {
-		pthread_kill(*(pthread_t *)mainThreadPtr, SIGUSR1);
+	while (!_altR_donePokingR) {
+		pthread_kill(_altR_mainThread, SIGUSR1);
 		nanosleep(&sleep100ms, NULL);
 	}
 
@@ -141,27 +144,27 @@ void altR_initR()
 {
 	static const char *args[] = { "altR", "--silent", "--vanilla" };
 	struct sigaction  pokeSignal;
-	static pthread_t  mainThread;
 	pthread_t         pokeThread;
 
 	if (_altR_inited++) {
 		fprintf(stderr, "-----> C: Already initialized\n");
 		return;
 	}
-
 	Rf_initEmbeddedR(sizeof(args) / sizeof(args[0]), (char **)args);
+
+	initStdinHandler();
 
 	_altR_findRToplevel();
 
-	pokeSignal.sa_handler = _altR_handlePokeSignal;
+	_altR_mainThread  = pthread_self();
+	_altR_donePokingR = 0;
+
+	pokeSignal.sa_handler = _altR_pokeR;
 	pokeSignal.sa_flags = SA_RESTART;
 	sigemptyset(&pokeSignal.sa_mask);
 	sigaction(SIGUSR1, &pokeSignal, NULL);
 
-	mainThread = pthread_self();
-
-	_altR_donePoking = 0;
-	pthread_create(&pokeThread, NULL, _altR_triggerPokeSignal, &mainThread);
+	pthread_create(&pokeThread, NULL, _altR_keepPokingR, NULL);
 }
 
 
@@ -174,9 +177,9 @@ void altR_endR()
 		return;
 	}
 
-	_altR_donePoking = 1;
-	Rf_endEmbeddedR(0);
+	_altR_donePokingR = 1;
 
+	Rf_endEmbeddedR(0);
 	_altR_inited = 0;
 }
 
@@ -198,7 +201,7 @@ int altR_do1LineR()
 	}
 
 	--jmpReturn;
-	SET_JMP(_altR_toplevel->cjmpbuf);
+	SETJMP(_altR_toplevel->cjmpbuf);
 	if (++jmpReturn) {
 		fprintf(stderr, "-----> C: Interrupted.\n");
 		return 1;
