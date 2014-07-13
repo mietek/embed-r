@@ -1,6 +1,7 @@
 R_HOME = $(shell pkg-config --variable=rhome libR)
-R_CFLAGS = $(shell pkg-config --cflags-only-I libR)
-R_LIBS = $(shell pkg-config --libs-only-L libR) $(shell pkg-config --libs-only-l libR)
+R_INCLUDE_DIRS = $(shell pkg-config --cflags-only-I libR)
+R_LIB_DIRS = $(shell pkg-config --libs-only-L libR)
+R_LIBS = $(shell pkg-config --libs-only-l libR)
 
 UNAME_S = $(shell sh -c 'uname -s 2>/dev/null || echo not')
 UNAME_O = $(shell sh -c 'uname -o 2>/dev/null || echo not')
@@ -26,17 +27,17 @@ all: build
 build: build/embedR-c build/embedR-ghc build/$(SHARED_ALT_R)
 
 build/embedR-c: build/altR.o src/embedR.c
-	gcc $(R_CFLAGS) $(R_LIBS) -Wall -o $@ -std=c99 $^
+	gcc $(R_INCLUDE_DIRS) $(R_LIB_DIRS) -Wall -o $@ -std=c99 $^ $(R_LIBS) -lpthread
 
 build/embedR-ghc: build/altR.o src/embedR.hs
-	ghc $(R_LIBS) -Wall -hidir build -odir build -o $@ -threaded $^
+	ghc $(R_LIB_DIRS) -Wall -hidir build -odir build -o $@ -threaded $^ $(R_LIBS) -lpthread
 
 build/$(SHARED_ALT_R): build/altR.o
-	gcc $(R_LIBS) -shared -o $@ -std=c99 $^
+	gcc $(R_LIB_DIRS) -shared -o $@ -std=c99 $^ $(R_LIBS) -lpthread
 
 build/altR.o: src/altR.c
 	@mkdir -p build
-	gcc $(R_CFLAGS) -Wall -c -fPIC -o $@ -std=c99 $^
+	gcc $(R_INCLUDE_DIRS) -Wall -c -fPIC -o $@ -std=c99 $^
 
 
 run-c: build/embedR-c
