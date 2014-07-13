@@ -113,6 +113,8 @@ static void _altR_findRToplevel()
  * thread, which triggers SIGUSR1 on the main thread every 100 ms.
  */
 
+static int _altR_donePoking;
+
 static void _altR_handlePokeSignal(int signal)
 {
 	R_ProcessEvents();
@@ -122,7 +124,7 @@ static void *_altR_triggerPokeSignal(void *mainThreadPtr)
 {
 	static const struct timespec sleep100ms = { 0, 100000000 };
 
-	for (;;) {
+	while (!_altR_donePoking) {
 		pthread_kill(*(pthread_t *)mainThreadPtr, SIGUSR1);
 		nanosleep(&sleep100ms, NULL);
 	}
@@ -130,6 +132,8 @@ static void *_altR_triggerPokeSignal(void *mainThreadPtr)
 	return NULL;
 }
 
+
+static int _altR_inited = 0;
 
 /* Initialise the embedded R instance.
  */
@@ -139,6 +143,11 @@ void altR_initR()
 	struct sigaction  pokeSignal;
 	static pthread_t  mainThread;
 	pthread_t         pokeThread;
+
+	if (_altR_inited++) {
+		fprintf(stderr, "-----> C: Already initialized\n");
+		return;
+	}
 
 	Rf_initEmbeddedR(sizeof(args) / sizeof(args[0]), (char **)args);
 
@@ -150,6 +159,8 @@ void altR_initR()
 	sigaction(SIGUSR1, &pokeSignal, NULL);
 
 	mainThread = pthread_self();
+
+	_altR_donePoking = 0;
 	pthread_create(&pokeThread, NULL, _altR_triggerPokeSignal, &mainThread);
 }
 
@@ -158,7 +169,15 @@ void altR_initR()
  */
 void altR_endR()
 {
+	if (!_altR_inited) {
+		fprintf(stderr, "-----> C: Not initialized yet\n");
+		return;
+	}
+
+	_altR_donePoking = 1;
 	Rf_endEmbeddedR(0);
+
+	_altR_inited = 0;
 }
 
 
@@ -172,6 +191,11 @@ int altR_do1LineR()
 	SEXP        parsedExpr;
 	ParseStatus status;
 	int         jmpReturn = 0;
+
+	if (!_altR_inited) {
+		fprintf(stderr, "-----> C: Not initialized yet\n");
+		return 0;
+	}
 
 	--jmpReturn;
 	SET_JMP(_altR_toplevel->cjmpbuf);
