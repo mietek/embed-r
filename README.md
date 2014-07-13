@@ -84,12 +84,14 @@ Use `make test` to run all tests, or `make test-c`, `make test-ghc`, and `make t
     $ make clean && make test-c
     rm -rf build
     gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
-    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -Wall -o build/embedR-c -std=c99 build/altR.o src/embedR.c
+    gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -Wall -o build/embedR-c -std=c99 build/altR.o src/embedR.c -lR  -lpthread
     -----> Embedding R in C
     R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources build/embedR-c <test/test.R
     -----> C: Starting R
     -----> C: Found exported R toplevel context
     -----> C: Parsing 'plot(cars)'
+    -----> C: Parsing 'print("fnord")'
+    [1] "fnord"
     -----> C: Parsing 'Sys.sleep(1)'
     -----> C: Exiting R
 
@@ -98,7 +100,7 @@ Use `make test` to run all tests, or `make test-c`, `make test-ghc`, and `make t
     $ make clean && make test-ghc
     rm -rf build
     gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
-    ghc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -Wall -hidir build -odir build -o build/embedR-ghc -threaded build/altR.o src/embedR.hs
+    ghc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -Wall -hidir build -odir build -o build/embedR-ghc -threaded build/altR.o src/embedR.hs -lR  -lpthread
     [1 of 1] Compiling Main             ( src/embedR.hs, build/Main.o )
     Linking build/embedR-ghc ...
     -----> Embedding R in Haskell
@@ -106,6 +108,8 @@ Use `make test` to run all tests, or `make test-c`, `make test-ghc`, and `make t
     -----> Haskell: Starting R
     -----> C: Found exported R toplevel context
     -----> C: Parsing 'plot(cars)'
+    -----> C: Parsing 'print("fnord")'
+    [1] "fnord"
     -----> C: Parsing 'Sys.sleep(1)'
     -----> Haskell: Exiting R
 
@@ -114,7 +118,7 @@ Use `make test` to run all tests, or `make test-c`, `make test-ghc`, and `make t
     $ make clean && make test-ghci
     rm -rf build
     gcc -I/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/include  -Wall -c -fPIC -o build/altR.o -std=c99 src/altR.c
-    gcc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -lR  -shared -o build/altR.dylib -std=c99 build/altR.o
+    gcc -L/usr/local/lib -L/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources/lib  -shared -o build/altR.dylib -std=c99 build/altR.o -lR
     -----> Embedding R in Haskell using GHCi
     R_HOME=/usr/local/Cellar/r/3.1.0/R.framework/Versions/3.1/Resources ghci -Wall -fno-ghci-sandbox -hidir build -odir build build/altR.dylib -ghci-script test/test.ghci <test/test.R
     GHCi, version 7.8.2: http://www.haskell.org/ghc/  :? for help
@@ -129,6 +133,8 @@ Use `make test` to run all tests, or `make test-c`, `make test-ghc`, and `make t
     -----> Haskell: Starting R
     -----> C: Found exported R toplevel context
     -----> C: Parsing 'plot(cars)'
+    -----> C: Parsing 'print("fnord")'
+    [1] "fnord"
     -----> C: Parsing 'Sys.sleep(1)'
     -----> Haskell: Exiting R
     -----> GHCi: Exiting GHCi script
